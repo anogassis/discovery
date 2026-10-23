@@ -3,9 +3,17 @@
 import hashlib
 import json
 from pathlib import Path
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
+
+# The downloader lives beside the tests in the repository and in /app/build in
+# the image, which is deliberately not on the runtime PYTHONPATH.
+_TOOL_DIR = Path(__file__).resolve().parents[1]
+for _candidate in (_TOOL_DIR, _TOOL_DIR / "build"):
+    if (_candidate / "download_checkpoints.py").is_file() and str(_candidate) not in sys.path:
+        sys.path.append(str(_candidate))
 
 import download_checkpoints as downloader
 

@@ -54,6 +54,6 @@ ENV PYTHONPATH="/app" \
     ALCHEMI_AGENT_RELEASE="1.1.2" \
     ALCHEMI_BASE_IMAGE="${BASE_IMAGE}"
 RUN python /app/build_release_manifest.py \
-    && PYTHONPATH="/app:/app/build" python -B -m unittest discover -s /app/tests -v
+    && python -B -m unittest discover -s /app/tests -v
 WORKDIR /app/workdir
 CMD ["/bin/bash"]
