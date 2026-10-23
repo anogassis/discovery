@@ -7,25 +7,46 @@ agent uses [Semantic Versioning](https://semver.org/). Versions match `version` 
 
 ## [1.1.2] - 2026-10-01
 
-Packaging-only release to meet the Microsoft Discovery catalog policy. The
-helper library, agent instructions, installed packages and checkpoints are
-unchanged from 1.1.1.
+Catalog-policy and security-hardening release. Scientific algorithms and bundled
+checkpoint bytes are unchanged from 1.1.1.
+
+### Security
+
+- Updated GitPython, hydra-core, multidict and urllib3 to patched versions after
+  dependency review identified published advisories.
+- Checkpoints are downloaded, size/hash verified, and only then deserialized.
+- Runtime learned-model aliases resolve only to hash-verified checkpoints baked
+  into the image; explicit existing local paths remain available for training
+  checkpoints.
+- Cached learned-model files are read-only, and `logs.out` is reserved from
+  artifact replacement.
 
 ### Changed
 
 - The pinned dependency list is renamed from `requirements-build.lock` to
-  `requirements-build.txt`, a file type the catalog accepts. Its contents are
-  unchanged.
+  `requirements-build.txt`, a file type the catalog accepts.
+- CPU execution must be explicitly requested for validation; deployed workflows
+  fail when CUDA is unavailable.
+- Experimental workflows outside completed validation coverage are identified in
+  catalog descriptions and require explicit user confirmation.
 - Catalog tags use the catalog vocabulary: `machine-learning`, `gpu` and
   `simulation` replace `machine-learned-potential`, `gpu-accelerated` and
   `high-throughput`.
 
+### Fixed
+
+- Image-build tests can import the checkpoint downloader from `/app/build`
+  without adding that directory to the runtime import path.
+- Screening validation tests explicitly use the selected test device, and the
+  release-manifest test checks the shared AIMNet cache under `/opt/cache/aimnet`.
+
 ### Validation
 
-- Rebuilt from a clean checkout; the installed packages, checkpoint hashes, base
-  image and license files are identical to 1.1.1. Revalidated on one H100 NVL
-  with the full three-part release check (smoke suite, offline models, MACE
-  dynamics).
+- Rebuilt from a clean image: 43 regression tests passed on CPU and on one H100 NVL
+  with no skips, and the GPU release smoke passed.
+- MACE `small-0b`, MACE `medium-0b2` and AIMNet2 inference, MACE relaxation and
+  100-step nonperiodic NVT were revalidated on H100 with independent numerical
+  checks. See the README verification status.
 
 ## [1.1.1] - 2026-10-01
 

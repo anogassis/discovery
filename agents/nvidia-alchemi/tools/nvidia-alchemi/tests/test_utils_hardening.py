@@ -7,8 +7,91 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
+from types import SimpleNamespace
 
 import alchemi_utils as u
+
+
+class CheckpointSecurityTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+        self.checkpoint = self.root / "model.pt"
+        self.checkpoint.write_bytes(b"verified model")
+        self.spec = self.root / "checkpoints.json"
+        self.spec.write_text(json.dumps({
+            "checkpoints": [{
+                "loader": "mace",
+                "name": "small-0b",
+                "path": str(self.checkpoint),
+                "size": self.checkpoint.stat().st_size,
+                "sha256": hashlib.sha256(self.checkpoint.read_bytes()).hexdigest(),
+            }]
+        }))
+
+    def resolve(self, name="small-0b"):
+        with patch.dict(os.environ, {"ALCHEMI_CHECKPOINT_SPEC": str(self.spec)}):
+            return u._resolve_baked_checkpoint("mace", name)
+
+    def test_baked_checkpoint_is_verified_and_resolved_to_local_path(self):
+        self.assertEqual(self.resolve(), str(self.checkpoint))
+
+    def test_unlisted_checkpoint_alias_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "not baked into this image"):
+            self.resolve("medium-mpa-0")
+
+    def test_modified_baked_checkpoint_is_rejected(self):
+        self.checkpoint.write_bytes(b"tampered")
+        with self.assertRaisesRegex(RuntimeError, "integrity failure"):
+            self.resolve()
+
+    def test_explicit_existing_training_checkpoint_is_allowed(self):
+        self.assertEqual(
+            u._resolve_baked_checkpoint("mace", str(self.checkpoint)),
+            str(self.checkpoint.resolve()),
+        )
+
+    def test_local_file_cannot_shadow_baked_alias(self):
+        shadow = self.root / "small-0b"
+        shadow.write_bytes(b"unverified")
+        previous = Path.cwd()
+        try:
+            os.chdir(self.root)
+            self.assertEqual(self.resolve(), str(self.checkpoint))
+        finally:
+            os.chdir(previous)
+
+
+class ErrorPolicyTests(unittest.TestCase):
+    def test_default_device_requires_cuda(self):
+        torch = SimpleNamespace(cuda=SimpleNamespace(is_available=lambda: False))
+        with patch.dict("sys.modules", {"torch": torch}):
+            with self.assertRaisesRegex(RuntimeError, "requires a CUDA GPU"):
+                u.default_device()
+
+    def test_sink_runtime_failure_is_not_reported_as_nonconvergence(self):
+        sink_type = type("Sink", (), {
+            "__len__": lambda self: 1,
+            "drain": lambda self: (_ for _ in ()).throw(RuntimeError("device failure")),
+        })
+        with self.assertRaisesRegex(RuntimeError, "device failure"):
+            u._drain_sink(sink_type())
+
+    def test_distributed_failure_raises_by_default(self):
+        with patch.object(u, "gpu_count", return_value=2), \
+                patch.object(u.os.path, "exists", return_value=False), \
+                patch.object(u.subprocess, "run",
+                             return_value=SimpleNamespace(returncode=7)):
+            with self.assertRaisesRegex(u.subprocess.CalledProcessError, "exit status 7"):
+                u.run_distributed("worker.py")
+
+    def test_distributed_failure_can_be_explicitly_handled(self):
+        with patch.object(u, "gpu_count", return_value=2), \
+                patch.object(u.os.path, "exists", return_value=False), \
+                patch.object(u.subprocess, "run",
+                             return_value=SimpleNamespace(returncode=7)):
+            self.assertEqual(u.run_distributed("worker.py", check=False), 7)
 
 
 class OutputContractTests(unittest.TestCase):
@@ -137,9 +220,9 @@ class IdentityTests(unittest.TestCase):
         a.info.update(system_id=1, input_index=0)
         with self.assertRaises(RuntimeError):
             u._restore_screen_identity([a.copy(), a.copy()], [a])
-        self.assertEqual(u.screen([], None), [])
+        self.assertEqual(u.screen([], None, device=self.device), [])
         with self.assertRaises(ValueError):
-            u.screen([a, a], None, sink_capacity=1)
+            u.screen([a, a], None, sink_capacity=1, device=self.device)
 
     def test_single_point_matches_analytic_lennard_jones(self):
         from ase import Atoms
@@ -211,7 +294,7 @@ class ReleaseManifestTests(unittest.TestCase):
         self.assertEqual(named, {
             ("mace", "small-0b"): "/opt/cache/mace/mace_agnesi_smallmodel",
             ("mace", "medium-0b2"): "/opt/cache/mace/macemediumdensityagnesistressmodel",
-            ("aimnet2", "aimnet2"): "/root/.cache/aimnet/aimnet2_wb97m_d3_0.pt",
+            ("aimnet2", "aimnet2"): "/opt/cache/aimnet/aimnet2_wb97m_d3_0.pt",
         })
 
 

@@ -16,7 +16,7 @@ import tempfile
 from enum import Enum
 
 __all__ = ["to_jsonable", "write_json_atomic", "export_artifacts"]
-_RESERVED = {"final_results.json", "artifact_manifest.json"}
+_RESERVED = {"final_results.json", "artifact_manifest.json", "logs.out"}
 
 
 def to_jsonable(value):

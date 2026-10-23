@@ -9,11 +9,9 @@ publisher:
   support_url: https://techcommunity.microsoft.com/category/azure/discussions/microsoft-discovery-discussions
   party: 1p
 description: >
-  Expert agent for high-throughput, GPU-first AI atomic simulation using the NVIDIA ALCHEMI Toolkit. Runs batched
-  geometry relaxation and molecular dynamics (NVE, NVT, NPT, NPH) driven by machine-learned interatomic potentials
-  (MACE, AIMNet2) composed with classical terms (Lennard-Jones, DFT-D3 dispersion, Ewald and PME electrostatics).
-  Supports multi-stage fused pipelines, inflight batching for screening campaigns, Zarr trajectory capture, MLIP
-  training and fine-tuning, and multi-GPU execution.
+  GPU-first batched atomistic simulation with MACE, AIMNet2 and classical potentials. Validated scope covers
+  single-GPU, nonperiodic inference, relaxation and molecular dynamics. Training, periodic/multi-system MACE,
+  cuEquivariance and multi-GPU execution are experimental and unvalidated.
 tags:
   - molecular-dynamics
   - machine-learning

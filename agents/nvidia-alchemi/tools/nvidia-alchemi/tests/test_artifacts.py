@@ -121,7 +121,7 @@ class ArtifactTests(unittest.TestCase):
                  dict(a="C:relative"), dict(a=""), dict(a=object()), dict(a=self.work), dict(a=self.output),
              dict(a="tree", b="tree/leaf"), dict(a=outside, b="leaf"), dict(a="folder.bin"),
                  dict(a="blocked/leaf")]
-        for name in ("final_results.json", "ARTIFACT_MANIFEST.JSON"):
+        for name in ("final_results.json", "ARTIFACT_MANIFEST.JSON", "logs.out"):
             self.put(name)
             self.put(name, b"preserve", self.output)
             cases.append(dict(a=name))
@@ -132,7 +132,7 @@ class ArtifactTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.export(a="tree")
         self.assertEqual((self.output / "final_results.json").read_bytes(), b"preserve")
-        for name in ("final_results.json", "ARTIFACT_MANIFEST.JSON"):
+        for name in ("final_results.json", "ARTIFACT_MANIFEST.JSON", "logs.out"):
             (self.work / name).unlink()
             self.put(name + "/payload")
             with self.assertRaises(ValueError):
