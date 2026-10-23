@@ -55,9 +55,12 @@ def main():
                             max_batch_size=3, max_atoms=12, device=device)
         ids = [{"input_index":a.info["input_index"], "system_id":a.info["system_id"],
                 "sample_label":a.info["sample_label"], "atoms":len(a)} for a in screened]
-        assert sorted(x["input_index"] for x in ids) == list(range(6))
-        assert all(x["atoms"] == sizes[x["input_index"]] for x in ids)
-        assert any(x["input_index"] != x["system_id"] for x in ids)
+        if sorted(x["input_index"] for x in ids) != list(range(6)):
+            raise AssertionError("screening lost or duplicated an input index")
+        if not all(x["atoms"] == sizes[x["input_index"]] for x in ids):
+            raise AssertionError("screening changed an input structure")
+        if not any(x["input_index"] != x["system_id"] for x in ids):
+            raise AssertionError("screening did not exercise admission reordering")
 
         # Independently computed reference, with actual tensor evidence saved.
         velocity = np.arange(18, dtype=np.float32).reshape(6,3) / 20
@@ -69,10 +72,17 @@ def main():
         reference = independent_kinetic_energy(velocity,masses,groups,2)
         check = compare_numeric(observed, reference, observed_source="toolkit.runtime.kinetic_energy",
                                 reference_source="numpy.direct.float64",atol=1e-5,rtol=1e-5)
-        assert check["status"] == "pass"
-        assert independent_energy_drift(np.array([1.]),None,np.array([6]),0) is None
-        assert compare_numeric(None,reference,observed_source="missing",reference_source="numpy",atol=0,rtol=0)["status"] == "unverified"
-        assert audit_hook_events([],[])["status"] == "unverified"
+        if check["status"] != "pass":
+            raise AssertionError("kinetic-energy cross-check failed")
+        if independent_energy_drift(np.array([1.]), None, np.array([6]), 0) is not None:
+            raise AssertionError("empty energy drift should be unverified")
+        if compare_numeric(
+            None, reference, observed_source="missing", reference_source="numpy",
+            atol=0, rtol=0
+        )["status"] != "unverified":
+            raise AssertionError("missing numeric evidence should be unverified")
+        if audit_hook_events([], [])["status"] != "unverified":
+            raise AssertionError("missing hook evidence should be unverified")
         np.savez(work / "reference_arrays.npz", velocities=velocity,masses=masses,groups=groups,
                  observed=observed,reference=reference)
         write_json_atomic(work / "identity_and_checks.json", {"identities":ids,"kinetic_energy":check})

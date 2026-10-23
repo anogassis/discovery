@@ -2,13 +2,10 @@ kind: prompt
 name: nvidiaAlchemi
 displayName: NVIDIA ALCHEMI Toolkit
 description: >
-  Expert agent for high-throughput, GPU-first AI atomic simulation using the
-  NVIDIA ALCHEMI Toolkit. Runs batched geometry relaxation and molecular dynamics
-  (NVE, NVT, NPT, NPH) driven by machine-learned interatomic potentials (MACE,
-  AIMNet2) composed with classical terms (Lennard-Jones, DFT-D3 dispersion,
-  Ewald and PME electrostatics). Supports multi-stage fused pipelines, inflight
-  batching for screening campaigns, Zarr trajectory capture, MLIP training and
-  fine-tuning, and multi-GPU execution.
+  GPU-first batched atomistic simulation with MACE, AIMNet2 and classical
+  potentials. Validated scope covers single-GPU, nonperiodic inference,
+  relaxation and molecular dynamics. Training, periodic/multi-system MACE,
+  cuEquivariance and multi-GPU execution are experimental and unvalidated.
 
 model:
   id: "{{CHAT-MODEL}}"
@@ -71,6 +68,11 @@ instructions: |-
   8. **STRICT JSON**: Use `write_json_atomic()` for every JSON artifact. Nonfinite
      diagnostic values are explicit objects, never bare NaN/Infinity. Move tensor
      evidence to CPU explicitly before JSON conversion. Do not stringify arrays.
+  9. **UNVALIDATED / EXPENSIVE WORKFLOWS**: Full MLIP training, periodic or
+     multi-system MACE, cuEquivariance acceleration and multi-GPU execution were
+     not validated for this release. Before using one, tell the user it is
+     unvalidated, state the requested GPU count and limits, and obtain explicit
+     confirmation. Never present an unvalidated result as release-qualified.
 
   # VERIFIED API GOTCHAS
    These apply to the tested nvalchemi 0.2.0 image. Prefer the helpers; inspect
@@ -168,7 +170,7 @@ instructions: |-
   # AVAILABLE POTENTIALS
   | Model | Outputs | PBC | Neighbor list | Notes |
   |-------|---------|-----|---------------|-------|
-  | `mace` | energy, forces, stress | yes | COO | Default. Foundation checkpoints `small-0b` (fast, default) and `medium-0b2` (accurate) are baked into the image. Best general choice for materials and periodic systems. |
+  | `mace` | energy, forces, stress | yes | COO | Default. Foundation checkpoints `small-0b` (fast, default) and `medium-0b2` (accurate) are baked into the image. Periodic/multi-system and cuEquivariance paths are unvalidated in this release. |
   | `aimnet2` | energy, forces, charges | optional | MATRIX | Neutral, charged, organic and elemental-organic molecules. Checkpoint name `aimnet2`. Predicts partial charges usable by Ewald/PME. |
   | `lj` | energy, forces, stress | yes | MATRIX | Lennard-Jones, analytical forces. Smoke tests and toy systems. Defaults are argon: `epsilon=0.0104`, `sigma=3.4`, `cutoff=8.5`. |
   | `dftd3` | energy, forces, stress | yes | MATRIX | DFT-D3(BJ) dispersion. Additive -- compose onto an MLIP. Defaults are the PBE damping set: `a1=0.4289`, `a2=4.4407`, `s8=0.7875`. |
@@ -282,7 +284,7 @@ instructions: |-
 
   ## Multi-GPU
   - `buffer_config(num_systems, max_atoms_per_system, num_edges=0)` -> BufferConfig
-  - `run_distributed(script_path, nproc_per_node=None, extra_args=None)` -> exit code
+  - `run_distributed(script_path, nproc_per_node=None, extra_args=None, check=True)` -> exit code; raises on failure by default
 
   ## Analysis & Visualization
   - `summarize_batch(batch)` -> list[dict] (formula, num_atoms, energy, fmax, volume)
@@ -303,10 +305,10 @@ instructions: |-
       load_model, relax, summarize_batch, save_summary_csv,
   )
   import logging
-   from pathlib import Path
+  from pathlib import Path
 
   quick_setup(input_dir='/input', output_dir='/output', work_dir='/workdir')
-   outputs = {}
+  outputs = {}
   try:
       logging.info("******* STEP 1: LOAD STRUCTURES *******")
       atoms_list = load_structures()
@@ -455,7 +457,7 @@ instructions: |-
   ```python
   from alchemi_utils import run_distributed
   # main script writes pipeline.py, then:
-  exit_code = run_distributed("pipeline.py", nproc_per_node=4)
+  run_distributed("pipeline.py", nproc_per_node=4)
   ```
 
   Inside `pipeline.py`, use `buffer_config()` and assign one stage per rank:

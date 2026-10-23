@@ -15,9 +15,12 @@ versions are listed in [requirements-build.txt](tools/nvidia-alchemi/requirement
 
 | Component | Version | License | Source |
 |---|---|---|---|
-| NVIDIA CUDA base image (`nvidia/cuda:13.0.1-devel-ubuntu24.04`) | 13.0.1 | NVIDIA Deep Learning Container License | <https://docs.nvidia.com/cuda/eula/> |
+| NVIDIA CUDA base image (`nvidia/cuda:13.0.1-devel-ubuntu24.04`) | 13.0.1 | NVIDIA CUDA Toolkit End User License Agreement | <https://docs.nvidia.com/cuda/eula/> |
 | Ubuntu 24.04 base packages | 24.04 | various (mostly GPL-2.0 / LGPL-2.1) | <https://ubuntu.com/legal> |
 | PyTorch (CUDA 13 build) | 2.13.0+cu130 | BSD-3-Clause | <https://github.com/pytorch/pytorch> |
+| NVIDIA cuBLAS (`nvidia-cublas`) | 13.1.1.3 | NVIDIA proprietary (`LicenseRef-NVIDIA-Proprietary`) | <https://developer.nvidia.com/cublas> |
+| NVIDIA cuDNN (`nvidia-cudnn-cu13`) | 9.20.0.48 | NVIDIA cuDNN Software License Agreement | <https://docs.nvidia.com/deeplearning/cudnn/latest/reference/eula.html> |
+| NVIDIA cuSPARSELt (`nvidia-cusparselt-cu13`) | 0.8.1 | NVIDIA proprietary software | <https://developer.nvidia.com/cusparselt> |
 
 ## ALCHEMI Toolkit
 
@@ -26,7 +29,9 @@ versions are listed in [requirements-build.txt](tools/nvidia-alchemi/requirement
 | NVIDIA ALCHEMI Toolkit (`nvalchemi-toolkit`) | 0.2.0 | Apache-2.0 | <https://github.com/NVIDIA/nvalchemi-toolkit> |
 | `nvalchemi-toolkit-ops` (GPU neighbor-list and interaction kernels) | per `cu13` extra | Apache-2.0 | <https://github.com/NVIDIA/nvalchemi-toolkit-ops> |
 | NVIDIA Warp (`warp-lang`) | transitive | Apache-2.0 | <https://github.com/NVIDIA/warp> |
-| cuEquivariance | transitive (`cu13`) | Apache-2.0 | <https://github.com/NVIDIA/cuEquivariance> |
+| cuEquivariance Python front end (`cuequivariance`, `cuequivariance-torch`) | 0.11.1 | Apache-2.0 | <https://github.com/NVIDIA/cuEquivariance> |
+| cuEquivariance CUDA operations (`cuequivariance-ops-cu13`) | 0.11.1 | NVIDIA Math Libraries Software Development Kits License Agreement | <https://pypi.org/project/cuequivariance-ops-cu13/0.11.1/> |
+| cuEquivariance PyTorch CUDA operations (`cuequivariance-ops-torch-cu13`) | 0.11.1 | NVIDIA proprietary software | <https://pypi.org/project/cuequivariance-ops-torch-cu13/0.11.1/> |
 
 ## Interatomic potentials and model weights
 
@@ -108,4 +113,4 @@ This agent is distributed as source (Dockerfile, build inputs, agent YAML and
 utilities); no container image or model weights are distributed with it. Whoever
 builds and distributes the resulting container image assumes responsibility for
 compliance with the licenses of the bundled components — in particular the NVIDIA
-Deep Learning Container License that governs the CUDA base image.
+CUDA Toolkit End User License Agreement that governs the CUDA base image.

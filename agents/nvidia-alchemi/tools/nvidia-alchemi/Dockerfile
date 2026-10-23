@@ -31,16 +31,18 @@ ENV PATH="/opt/venv/bin:${PATH}" \
     VIRTUAL_ENV=/opt/venv \
     XDG_CACHE_HOME=/opt/cache \
     TORCH_HOME=/opt/cache/torch \
-    HF_HOME=/opt/cache/huggingface
+    HF_HOME=/opt/cache/huggingface \
+    AIMNET_CACHE_DIR=/opt/cache/aimnet
 
 COPY tools/nvidia-alchemi/requirements-build.txt tools/nvidia-alchemi/checkpoints.json tools/nvidia-alchemi/download_checkpoints.py /app/build/
 RUN pip install --no-deps -r /app/build/requirements-build.txt && pip check
-RUN mkdir -p /opt/cache/torch /opt/cache/huggingface \
+RUN mkdir -p /opt/cache/torch /opt/cache/huggingface /opt/cache/aimnet \
     && python /app/build/download_checkpoints.py /app/build/checkpoints.json
 
 RUN mkdir -p /app/workdir /workdir /input /output /tmp/alchemi_scratch \
-    && chmod -R 0777 /opt/cache /app/workdir /workdir /output /tmp/alchemi_scratch \
-    && chmod -R a+rX /root
+    && chmod -R 0777 /opt/cache/torch /opt/cache/huggingface \
+        /app/workdir /workdir /output /tmp/alchemi_scratch \
+    && chmod -R a+rX,a-w /opt/cache/mace /opt/cache/aimnet
 
 COPY tools/nvidia-alchemi/alchemi_utils.py tools/nvidia-alchemi/alchemi_artifacts.py tools/nvidia-alchemi/alchemi_validators.py tools/nvidia-alchemi/release_smoke.py tools/nvidia-alchemi/build_release_manifest.py /app/
 COPY tools/nvidia-alchemi/example-input-files /app/example-input-files
@@ -52,6 +54,6 @@ ENV PYTHONPATH="/app" \
     ALCHEMI_AGENT_RELEASE="1.1.2" \
     ALCHEMI_BASE_IMAGE="${BASE_IMAGE}"
 RUN python /app/build_release_manifest.py \
-    && python -B -m unittest discover -s /app/tests -v
+    && PYTHONPATH="/app:/app/build" python -B -m unittest discover -s /app/tests -v
 WORKDIR /app/workdir
 CMD ["/bin/bash"]

@@ -139,8 +139,16 @@ cannot alone prove logical independence; callers must retain real observations.
 
 Tests are in [tools/nvidia-alchemi/tests](tools/nvidia-alchemi/tests). Run them using
 Python's `unittest` discovery with the tool directory on `PYTHONPATH`; no pytest
-dependency is required. Real toolkit identity tests run in the release image;
-set `ALCHEMI_TEST_GPU=1` to require GPU execution rather than the CPU test path.
+dependency is required. Inside the image, include `/app/build` for the checkpoint
+downloader tests:
+
+```bash
+PYTHONPATH=/app:/app/build python -B -m unittest discover -s /app/tests -v
+```
+
+Image-build tests explicitly use the CPU test path. Set `ALCHEMI_TEST_GPU=1` on
+the command above to require GPU execution for the real toolkit identity tests.
+This does not enable CPU fallback for deployed workflows.
 The [release smoke runner](tools/nvidia-alchemi/release_smoke.py) requires a GPU
 by default and produces an artifact manifest for post-download verification.
 
@@ -250,27 +258,42 @@ Microsoft Discovery team contact: discovery-catalog@microsoft.com
 
 ## Verification status
 
-This release (1.1.2) was validated on one H100 NVL, using the agent itself:
+This release (1.1.2) was validated from a clean image build and on one H100 NVL
+(CUDA 13.0, torch 2.13.0), running scripts through the deployed tool. Results were
+read back from the exported artifacts, hash-checked against the artifact manifest,
+and recomputed independently from the saved arrays.
 
-- **Regression smoke:** all **32 tests** passed with no skips; independent download
-  verification checked all 30 declared files, input-identity mapping and NumPy
-  reference calculations.
-- **Offline models:** MACE `small-0b`, MACE `medium-0b2` and AIMNet2 were each
-  selected by name from the release manifest, hash-checked, and evaluated with
-  `single_point()`; all outputs were finite on CUDA and agreed with CPU results to
-  about $2\times10^{-6}$ eV.
-- **MACE dynamics:** 100 steps of nonperiodic NVT on three water molecules with
-  `medium-0b2` completed with all values finite. The final kinetic energy recomputed
-  independently from the saved velocities and masses matched the recorded value
-  to $8\times10^{-9}$ eV.
+- **Image build:** all **43 regression tests** passed on CPU with no skips;
+  `pip check` passed and every baked checkpoint matched its pinned size and SHA-256
+  before it was deserialized.
+- **GPU release smoke:** the same 43 tests passed on the H100 with no skips, followed
+  by `release_smoke.py` (Lennard-Jones screening identity and a kinetic-energy
+  cross-check against NumPy).
+- **Learned models:** MACE `small-0b`, MACE `medium-0b2` and AIMNet2, loaded by name
+  from the release manifest, were evaluated with `single_point()` on the bundled water
+  and ethanol structures. All outputs were finite; CUDA agreed with CPU to within
+  $5\times10^{-6}$ eV in energy and $1.4\times10^{-5}$ eV/Å in force; energies were
+  invariant and forces equivariant under a rigid rotation; net forces were below
+  $5\times10^{-7}$ eV/Å. The default MACE CUDA path (cuEquivariance enabled) matched
+  the path with cuEquivariance disabled to within $1.4\times10^{-6}$ eV/Å.
+- **MACE relaxation:** FIRE on distorted water and ethanol with `medium-0b2` lowered
+  the energy by 0.14 eV and 0.82 eV and reached a maximum force of 0.017 and
+  0.021 eV/Å.
+- **MACE dynamics:** 100 steps of nonperiodic Langevin NVT (0.5 fs, 300 K) on three
+  water molecules with `medium-0b2` completed with all values finite. The final
+  kinetic energy recomputed independently from the saved velocities and masses
+  matched the recorded value to $5\times10^{-9}$ eV.
 
-Earlier H100 evaluations also exercised Lennard-Jones and demo workflows, NPT
+Earlier H100 evaluations of previous releases also exercised demo workflows, NPT
 response, exact trajectory readback and defensive hooks. See the
 [changelog](CHANGELOG.md) for what changed in each release.
 
 This is not physical-accuracy certification. Multi-GPU execution, full training,
-periodic/multi-system MACE, cuEquivariance acceleration, explicit compiled MACE,
-and drift-triggered warning branches remain outside completed validation coverage.
+periodic/multi-system MACE, cuEquivariance beyond single-system nonperiodic
+inference, explicit compiled MACE, and drift-triggered warning branches remain
+outside completed validation coverage.
+The agent must disclose that status and obtain explicit user confirmation before
+running those experimental paths.
 
 ## License
 

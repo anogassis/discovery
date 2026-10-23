@@ -71,7 +71,7 @@ if __name__ == "__main__":
     files["download_checkpoints.py"] = sha256(root / "build" / "download_checkpoints.py")
     licenses = preserve_licenses(root / "licenses")
     checkpoints = {}
-    for folder in (Path("/opt/cache/mace"), Path("/root/.cache/aimnet")):
+    for folder in (Path("/opt/cache/mace"), Path("/opt/cache/aimnet")):
         if folder.exists():
             for p in sorted(folder.rglob("*")):
                 if p.is_file() and p.stat().st_size > 1_000_000:

@@ -26,6 +26,7 @@ License: this wrapper is part of the Discovery catalog. See THIRD_PARTY_NOTICES.
 for the licenses of nvalchemi-toolkit, MACE, AIMNet2 and the CUDA base image.
 """
 import glob
+import hashlib
 import importlib
 import json
 import logging
@@ -282,10 +283,15 @@ def log_gpu_info() -> Dict[str, Any]:
 
 
 def default_device() -> str:
-    """Return 'cuda' when a GPU is present, otherwise 'cpu'."""
+    """Return the available CUDA device or fail when GPU execution is unavailable."""
     import torch
 
-    return "cuda" if torch.cuda.is_available() else "cpu"
+    if not torch.cuda.is_available():
+        raise RuntimeError(
+            "ALCHEMI requires a CUDA GPU; pass device='cpu' only for explicit "
+            "offline CPU validation."
+        )
+    return "cuda"
 
 
 def gpu_count() -> int:
@@ -500,6 +506,55 @@ def list_models() -> List[Dict[str, str]]:
     return [{"name": k, "description": MODEL_DESCRIPTIONS[k]} for k in MODEL_REGISTRY]
 
 
+def _resolve_baked_checkpoint(loader: str, checkpoint: str) -> str:
+    """Resolve a learned-model alias to a verified, image-baked file."""
+    supplied = Path(checkpoint)
+    explicit_path = (
+        supplied.is_absolute()
+        or supplied.parent != Path(".")
+        or supplied.suffix.lower() in {".pt", ".pth", ".ckpt"}
+    )
+    if explicit_path and supplied.is_file():
+        return str(supplied.resolve())
+
+    spec_path = Path(os.environ.get(
+        "ALCHEMI_CHECKPOINT_SPEC", "/app/build/checkpoints.json"
+    ))
+    if not spec_path.is_file():
+        raise RuntimeError(f"Checkpoint manifest is unavailable: {spec_path}")
+    entries = json.loads(spec_path.read_text(encoding="utf-8")).get("checkpoints", [])
+    entry = next(
+        (item for item in entries
+         if item.get("loader") == loader and item.get("name") == checkpoint),
+        None,
+    )
+    if entry is None:
+        available = sorted(
+            item["name"] for item in entries if item.get("loader") == loader
+        )
+        raise ValueError(
+            f"Checkpoint {checkpoint!r} is not baked into this image for {loader}. "
+            f"Available: {available}. Pass an existing local checkpoint path for "
+            "an explicitly supplied training checkpoint."
+        )
+
+    path = Path(entry["path"])
+    if not path.is_file():
+        raise FileNotFoundError(f"Baked checkpoint is missing: {path}")
+    size = path.stat().st_size
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    actual_hash = digest.hexdigest()
+    if size != entry["size"] or actual_hash != entry["sha256"]:
+        raise RuntimeError(
+            f"Baked checkpoint integrity failure for {loader}:{checkpoint}: "
+            f"size {size}, sha256 {actual_hash}"
+        )
+    return str(path)
+
+
 def load_model(name: str = "mace", checkpoint: Optional[str] = None,
                device: Optional[str] = None, dtype: Optional[Any] = None,
                enable_cueq: bool = True, **kwargs: Any) -> Any:
@@ -536,16 +591,18 @@ def load_model(name: str = "mace", checkpoint: Optional[str] = None,
     dtype = dtype or torch.float32
 
     if key == "mace":
+        checkpoint = _resolve_baked_checkpoint("mace", checkpoint or "small-0b")
         model = wrapper_cls.from_checkpoint(
-            checkpoint or "small-0b",
+            checkpoint,
             device=torch.device(device),
             dtype=dtype,
             enable_cueq=enable_cueq and str(device).startswith("cuda"),
             **kwargs,
         )
     elif key == "aimnet2":
+        checkpoint = _resolve_baked_checkpoint("aimnet2", checkpoint or "aimnet2")
         model = wrapper_cls.from_checkpoint(
-            checkpoint or "aimnet2", device=torch.device(device), **kwargs
+            checkpoint, device=torch.device(device), **kwargs
         )
     else:
         params = dict(MODEL_DEFAULTS.get(key, {}))
@@ -1003,11 +1060,7 @@ def _drain_sink(sink: Any) -> List[Any]:
 
     for method in ("drain", "read"):
         if hasattr(sink, method):
-            try:
-                result = getattr(sink, method)()
-            except RuntimeError as exc:
-                logging.warning(f"Could not drain sink: {exc}")
-                return []
+            result = getattr(sink, method)()
             if result is None:
                 return []
             return list(result) if isinstance(result, (list, tuple)) else [result]
@@ -1232,7 +1285,8 @@ def buffer_config(num_systems: int, max_atoms_per_system: int,
 
 
 def run_distributed(script_path: str, nproc_per_node: Optional[int] = None,
-                    extra_args: Optional[Sequence[str]] = None) -> int:
+                    extra_args: Optional[Sequence[str]] = None,
+                    check: bool = True) -> int:
     """Launch a distributed script with `torchrun` and stream its output.
 
     `DistributedPipeline` and `DomainParallel` cannot run inline in the main
@@ -1243,6 +1297,8 @@ def run_distributed(script_path: str, nproc_per_node: Optional[int] = None,
         script_path: Path to the script to launch.
         nproc_per_node: Process count; defaults to every visible GPU.
         extra_args: Additional arguments passed through to the script.
+        check: Raise `CalledProcessError` when torchrun fails. Set false only
+            when the caller explicitly handles the returned exit code.
 
     Returns:
         The `torchrun` exit code.
@@ -1264,6 +1320,8 @@ def run_distributed(script_path: str, nproc_per_node: Optional[int] = None,
     proc = subprocess.run(cmd, cwd=WORK_DIR, check=False)
     if proc.returncode != 0:
         logging.error(f"torchrun exited with code {proc.returncode}")
+        if check:
+            raise subprocess.CalledProcessError(proc.returncode, cmd)
     return proc.returncode
 
 
