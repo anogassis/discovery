@@ -16,6 +16,9 @@ checkpoint bytes are unchanged from 1.1.1.
   dependency review identified published advisories.
 - Updated certifi to 2026.10.19 to remove the compromised emSign root CAs
   (GHSA-6q48-6c7w-9gw2).
+- Updated aiohttp 3.14.4, filelock 4.2.1, GitPython 3.2.1, hydra-core 1.3.8 and
+  Pillow 13.0.0 for high and critical advisories reviewed after the previous
+  update, and setuptools 84.1.0 for a low-severity advisory.
 - Checkpoints are downloaded, size/hash verified, and only then deserialized.
 - Runtime learned-model aliases resolve only to hash-verified checkpoints baked
   into the image; explicit existing local paths remain available for training
