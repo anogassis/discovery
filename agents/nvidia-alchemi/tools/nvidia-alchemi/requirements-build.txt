@@ -197,6 +197,6 @@ warp-lang==1.16.0
 wcwidth==0.8.2
 wheel==0.48.0
 wrapt==2.3.0
-yarl==1.24.5
+yarl==1.25.1
 zarr==3.3.0
 zipp==4.1.0

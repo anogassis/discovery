@@ -18,7 +18,8 @@ checkpoint bytes are unchanged from 1.1.1.
   (GHSA-6q48-6c7w-9gw2).
 - Updated aiohttp 3.14.4, filelock 4.2.1, GitPython 3.2.1, hydra-core 1.3.8 and
   Pillow 13.0.0 for high and critical advisories reviewed after the previous
-  update, and setuptools 84.1.0 for a low-severity advisory.
+  update, and setuptools 84.1.0 for a low-severity advisory. yarl moves to 1.25.1,
+  the minimum aiohttp 3.14.4 requires.
 - Checkpoints are downloaded, size/hash verified, and only then deserialized.
 - Runtime learned-model aliases resolve only to hash-verified checkpoints baked
   into the image; explicit existing local paths remain available for training
