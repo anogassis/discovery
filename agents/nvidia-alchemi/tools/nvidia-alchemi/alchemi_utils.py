@@ -70,7 +70,9 @@ MODEL_DESCRIPTIONS: Dict[str, str] = {
     "mace": "MACE equivariant MLIP. Foundation checkpoints 'small-0b' and "
             "'medium-0b2' are baked into the image. Energy/forces/stress, PBC, "
             "COO neighbor list. Default choice for materials and periodic systems.",
-    "aimnet2": "AIMNet2 MLIP for neutral, charged, organic and elemental-organic "
+    "aimnet2": "EXPERIMENTAL, INCOMPLETE: AIMNet2 MLIP loaded without its Coulomb "
+               "and D3 terms, so energies and forces differ from the published "
+               "model. For neutral, charged, organic and elemental-organic "
                "molecules. Predicts partial charges alongside energy/forces; "
                "MATRIX neighbor list. Checkpoint name: 'aimnet2'.",
     "lj": "Lennard-Jones analytical force field. Cheap; smoke tests, toy systems "

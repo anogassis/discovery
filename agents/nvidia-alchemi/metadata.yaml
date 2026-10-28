@@ -10,8 +10,9 @@ publisher:
   party: 1p
 description: >
   GPU-first batched atomistic simulation with MACE, AIMNet2 and classical potentials. Validated scope covers
-  single-GPU, nonperiodic inference, relaxation and molecular dynamics. Training, periodic/multi-system MACE,
-  cuEquivariance and multi-GPU execution are experimental and unvalidated.
+  single-GPU, nonperiodic MACE inference, relaxation and molecular dynamics. AIMNet2 is incomplete: it runs
+  without its Coulomb and D3 terms, so results differ from the published model. Training, periodic/multi-system
+  MACE, cuEquivariance and multi-GPU execution are experimental and unvalidated.
 tags:
   - molecular-dynamics
   - machine-learning

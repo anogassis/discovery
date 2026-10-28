@@ -24,8 +24,9 @@ This agent operates as a `kind: prompt` agent within Discovery Studio.
 
 - **Model**: configured via the `{{CHAT-MODEL}}` parameter at deploy time
 - **Potentials**: MACE (foundation checkpoints `small-0b` and `medium-0b2` baked into
-  the image), AIMNet2 (`aimnet2` checkpoint, also baked in), Lennard-Jones, DFT-D3(BJ),
-  Ewald, PME — composable with the `+` operator or an explicit pipeline
+  the image), AIMNet2 (`aimnet2` checkpoint, also baked in; incomplete and experimental,
+  see Verification status), Lennard-Jones, DFT-D3(BJ), Ewald, PME — composable with
+  the `+` operator or an explicit pipeline
 - **Dynamics**: FIRE / FIRE2 optimizers and NVE, NVT (Langevin, Nosé-Hoover), NPT and
   NPH integrators sharing one execution loop with nine hook points per step
 - **Scaling**: fused multi-stage pipelines and inflight batching on one GPU;
@@ -238,7 +239,8 @@ Microsoft Discovery team contact: discovery-catalog@microsoft.com
   loosen `fmax` to capture the remainder.
 - **UMA / fairchem-core is not available.** Upstream declares the `uma` extra mutually
   exclusive with the `mace`, `cu12` and `cu13` extras (incompatible `e3nn` / `torch`
-  pins), and its checkpoints require gated HuggingFace access. Use MACE or AIMNet2.
+  pins), and its checkpoints require gated HuggingFace access. Use MACE (AIMNet2 is
+  experimental in this release).
 - **Multi-GPU workflows require `torchrun`** and a multi-GPU SKU. `DistributedPipeline`
   and `DomainParallel` run in a separate script launched as one process per GPU, not
   inline in the main workflow script.
@@ -276,6 +278,14 @@ and recomputed independently from the saved arrays.
   invariant and forces equivariant under a rigid rotation; net forces were below
   $5\times10^{-7}$ eV/Å. The default MACE CUDA path (cuEquivariance enabled) matched
   the path with cuEquivariance disabled to within $1.4\times10^{-6}$ eV/Å.
+- **AIMNet2 is incomplete:** the checks above show numerical consistency, not
+  physical correctness. The nvalchemi wrapper disables the Coulomb and DFT-D3 terms
+  that the bundled `aimnet2` checkpoint requires, so `load_model("aimnet2")` returns
+  only the short-range neural-network term. Compared with the `aimnet` package's
+  reference calculator on the bundled water molecule, the maximum force was
+  9.48 eV/Å instead of 0.68 eV/Å, and a symmetric O–H stretch scan had no energy
+  minimum below 1.10 Å instead of one at 0.959 Å. AIMNet2 is experimental in this
+  release.
 - **MACE relaxation:** FIRE on distorted water and ethanol with `medium-0b2` lowered
   the energy by 0.14 eV and 0.82 eV and reached a maximum force of 0.017 and
   0.021 eV/Å.
@@ -288,8 +298,8 @@ Earlier H100 evaluations of previous releases also exercised demo workflows, NPT
 response, exact trajectory readback and defensive hooks. See the
 [changelog](CHANGELOG.md) for what changed in each release.
 
-This is not physical-accuracy certification. Multi-GPU execution, full training,
-periodic/multi-system MACE, cuEquivariance beyond single-system nonperiodic
+This is not physical-accuracy certification. AIMNet2, multi-GPU execution, full
+training, periodic/multi-system MACE, cuEquivariance beyond single-system nonperiodic
 inference, explicit compiled MACE, and drift-triggered warning branches remain
 outside completed validation coverage.
 The agent must disclose that status and obtain explicit user confirmation before

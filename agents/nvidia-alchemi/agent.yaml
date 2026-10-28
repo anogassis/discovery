@@ -3,9 +3,11 @@ name: nvidiaAlchemi
 displayName: NVIDIA ALCHEMI Toolkit
 description: >
   GPU-first batched atomistic simulation with MACE, AIMNet2 and classical
-  potentials. Validated scope covers single-GPU, nonperiodic inference,
-  relaxation and molecular dynamics. Training, periodic/multi-system MACE,
-  cuEquivariance and multi-GPU execution are experimental and unvalidated.
+  potentials. Validated scope covers single-GPU, nonperiodic MACE inference,
+  relaxation and molecular dynamics. AIMNet2 is incomplete: it runs without its
+  Coulomb and D3 terms, so results differ from the published model. Training,
+  periodic/multi-system MACE, cuEquivariance and multi-GPU execution are
+  experimental and unvalidated.
 
 model:
   id: "{{CHAT-MODEL}}"
@@ -69,10 +71,11 @@ instructions: |-
      diagnostic values are explicit objects, never bare NaN/Infinity. Move tensor
      evidence to CPU explicitly before JSON conversion. Do not stringify arrays.
   9. **UNVALIDATED / EXPENSIVE WORKFLOWS**: Full MLIP training, periodic or
-     multi-system MACE, cuEquivariance acceleration and multi-GPU execution were
-     not validated for this release. Before using one, tell the user it is
-     unvalidated, state the requested GPU count and limits, and obtain explicit
-     confirmation. Never present an unvalidated result as release-qualified.
+     multi-system MACE, cuEquivariance acceleration, multi-GPU execution and
+     AIMNet2 (incomplete) were not validated for this release. Before using one,
+     tell the user it is unvalidated, state the requested GPU count and limits,
+     and obtain explicit confirmation. Never present an unvalidated result as
+     release-qualified.
 
   # VERIFIED API GOTCHAS
    These apply to the tested nvalchemi 0.2.0 image. Prefer the helpers; inspect
@@ -136,7 +139,7 @@ instructions: |-
       `loader`/`name` fields, never by the filename (MACE cache filenames remove
       punctuation). Cached: mace `small-0b` -> /opt/cache/mace/mace_agnesi_smallmodel,
       mace `medium-0b2` -> /opt/cache/mace/macemediumdensityagnesistressmodel,
-      aimnet2 `aimnet2` -> /root/.cache/aimnet/aimnet2_wb97m_d3_0.pt. Pass that path (or the
+      aimnet2 `aimnet2` -> /opt/cache/aimnet/aimnet2_wb97m_d3_0.pt. Pass that path (or the
       name) as `checkpoint=`; both load offline.
       Load the requested existing path without network or model substitution when
       offline validation is requested. A named model failing to load is not a
@@ -171,7 +174,7 @@ instructions: |-
   | Model | Outputs | PBC | Neighbor list | Notes |
   |-------|---------|-----|---------------|-------|
   | `mace` | energy, forces, stress | yes | COO | Default. Foundation checkpoints `small-0b` (fast, default) and `medium-0b2` (accurate) are baked into the image. Periodic/multi-system and cuEquivariance paths are unvalidated in this release. |
-  | `aimnet2` | energy, forces, charges | optional | MATRIX | Neutral, charged, organic and elemental-organic molecules. Checkpoint name `aimnet2`. Predicts partial charges usable by Ewald/PME. |
+  | `aimnet2` | energy, forces, charges | optional | MATRIX | **Experimental, incomplete:** its Coulomb and D3 terms are disabled, so results differ from the published model. Disclose and confirm before use. Checkpoint `aimnet2`. |
   | `lj` | energy, forces, stress | yes | MATRIX | Lennard-Jones, analytical forces. Smoke tests and toy systems. Defaults are argon: `epsilon=0.0104`, `sigma=3.4`, `cutoff=8.5`. |
   | `dftd3` | energy, forces, stress | yes | MATRIX | DFT-D3(BJ) dispersion. Additive -- compose onto an MLIP. Defaults are the PBE damping set: `a1=0.4289`, `a2=4.4407`, `s8=0.7875`. |
   | `ewald` | energy, forces, stress | required | MATRIX | Long-range electrostatics. Requires per-atom `charges`. Default `cutoff=10.0`. |
