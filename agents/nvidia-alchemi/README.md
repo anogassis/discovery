@@ -139,11 +139,11 @@ cannot alone prove logical independence; callers must retain real observations.
 
 Tests are in [tools/nvidia-alchemi/tests](tools/nvidia-alchemi/tests). Run them using
 Python's `unittest` discovery with the tool directory on `PYTHONPATH`; no pytest
-dependency is required. Inside the image, include `/app/build` for the checkpoint
-downloader tests:
+dependency is required. Inside the image, the runtime `PYTHONPATH` is sufficient; the
+checkpoint downloader tests locate `/app/build` themselves:
 
 ```bash
-PYTHONPATH=/app:/app/build python -B -m unittest discover -s /app/tests -v
+python -B -m unittest discover -s /app/tests -v
 ```
 
 Image-build tests explicitly use the CPU test path. Set `ALCHEMI_TEST_GPU=1` on

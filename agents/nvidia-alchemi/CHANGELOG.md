@@ -14,6 +14,12 @@ checkpoint bytes are unchanged from 1.1.1.
 
 - Updated GitPython, hydra-core, multidict and urllib3 to patched versions after
   dependency review identified published advisories.
+- Updated certifi to 2026.10.19 to remove the compromised emSign root CAs
+  (GHSA-6q48-6c7w-9gw2).
+- Updated aiohttp 3.14.4, filelock 4.2.1, GitPython 3.2.1, hydra-core 1.3.8 and
+  Pillow 13.0.0 for high and critical advisories reviewed after the previous
+  update, and setuptools 84.1.0 for a low-severity advisory. yarl moves to 1.25.1,
+  the minimum aiohttp 3.14.4 requires.
 - Checkpoints are downloaded, size/hash verified, and only then deserialized.
 - Runtime learned-model aliases resolve only to hash-verified checkpoints baked
   into the image; explicit existing local paths remain available for training
@@ -36,7 +42,9 @@ checkpoint bytes are unchanged from 1.1.1.
 ### Fixed
 
 - Image-build tests can import the checkpoint downloader from `/app/build`
-  without adding that directory to the runtime import path.
+  without adding that directory to the runtime import path, so
+  `python /app/release_smoke.py` runs unchanged in the deployed image. Image-build
+  tests now run with the runtime `PYTHONPATH` to catch import-path regressions.
 - Screening validation tests explicitly use the selected test device, and the
   release-manifest test checks the shared AIMNet cache under `/opt/cache/aimnet`.
 
