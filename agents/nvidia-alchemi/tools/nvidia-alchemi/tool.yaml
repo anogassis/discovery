@@ -1,10 +1,11 @@
 name: nvidiaAlchemi
 description: >
   GPU-first batched atomistic simulation with MACE, AIMNet2 and classical
-  potentials. Validated scope covers single-GPU, nonperiodic inference,
-  relaxation and molecular dynamics. Training, periodic/multi-system MACE,
-  cuEquivariance and multi-GPU execution are experimental and unvalidated.
-  GPU required for inference.
+  potentials. Validated scope covers single-GPU, nonperiodic MACE inference,
+  relaxation and molecular dynamics. AIMNet2 is incomplete: it runs without its
+  Coulomb and D3 terms, so results differ from the published model. Training,
+  periodic/multi-system MACE, cuEquivariance and multi-GPU execution are
+  experimental and unvalidated. GPU required for inference.
 version: 1.1.2
 category: "AI & Machine Learning"
 license: Apache-2.0
@@ -61,7 +62,8 @@ code_environments:
           single-system domain decomposition, launched with torchrun
 
       Bundled potentials: MACE (foundation checkpoints baked into the image),
-      AIMNet2, Lennard-Jones, DFT-D3(BJ), Ewald, PME. Models compose with the
+      AIMNet2 (experimental: loaded without its Coulomb and D3 terms),
+      Lennard-Jones, DFT-D3(BJ), Ewald, PME. Models compose with the
       `+` operator or an explicit PipelineModelWrapper.
 
       Not included: UMA / fairchem-core. Its `uma` extra is mutually exclusive

@@ -35,6 +35,10 @@ checkpoint bytes are unchanged from 1.1.1.
   fail when CUDA is unavailable.
 - Experimental workflows outside completed validation coverage are identified in
   catalog descriptions and require explicit user confirmation.
+- AIMNet2 is documented as incomplete and experimental. The nvalchemi wrapper
+  disables the Coulomb and DFT-D3 terms that the bundled checkpoint requires, so
+  `load_model("aimnet2")` returns only the short-range neural-network term. The
+  agent discloses this and obtains explicit confirmation before using AIMNet2.
 - Catalog tags use the catalog vocabulary: `machine-learning`, `gpu` and
   `simulation` replace `machine-learned-potential`, `gpu-accelerated` and
   `high-throughput`.
@@ -47,6 +51,8 @@ checkpoint bytes are unchanged from 1.1.1.
   tests now run with the runtime `PYTHONPATH` to catch import-path regressions.
 - Screening validation tests explicitly use the selected test device, and the
   release-manifest test checks the shared AIMNet cache under `/opt/cache/aimnet`.
+- Agent instructions list the AIMNet2 cache path as
+  `/opt/cache/aimnet/aimnet2_wb97m_d3_0.pt`.
 
 ### Validation
 
@@ -54,7 +60,9 @@ checkpoint bytes are unchanged from 1.1.1.
   with no skips, and the GPU release smoke passed.
 - MACE `small-0b`, MACE `medium-0b2` and AIMNet2 inference, MACE relaxation and
   100-step nonperiodic NVT were revalidated on H100 with independent numerical
-  checks. See the README verification status.
+  checks. For AIMNet2 these checks cover numerical consistency only; a comparison
+  with the `aimnet` reference calculator showed the missing Coulomb and D3 terms.
+  See the README verification status.
 
 ## [1.1.1] - 2026-10-01
 
