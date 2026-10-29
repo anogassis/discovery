@@ -171,8 +171,7 @@ rm -rf ~/.md-toolbox
 ## 9. Reporting privacy concerns
 
 If you spot a behavior of this extension that contradicts anything in
-this document, please open an issue on the public release repository
-at [`microsoft/discovery`](https://github.com/microsoft/discovery/issues/new?labels=feedback&title=%5BPrivacy%5D%20)
+this document, please open an issue on the [TechCommunity forums](https://techcommunity.microsoft.com/category/azure/discussions/microsoft-discovery-discussions)
 or contact the maintainers.
 
 The "Send Feedback" entry in the Discovery Toolbox sidebar is hidden
@@ -184,6 +183,6 @@ pre-filled body before submitting — the GitHub issue is public.
 
 ---
 
-<sub>Privacy notice for Discovery Toolbox **v1.9.11** · built from `3bfa001` on 2026-09-29T23:11:52.803Z.</sub>
+<sub>Privacy notice for Discovery Toolbox **v1.11.8** · built from `fefa8c8` on 2026-10-26T21:34:27.312Z.</sub>
 
 <sub>This document is maintained in the open in the [`microsoft/discovery`](https://github.com/microsoft/discovery/tree/main/utilities/discovery-toolbox) repository. It covers only this extension; for VS Code's own privacy practices see the [VS Code privacy statement](https://code.visualstudio.com/license).</sub>
